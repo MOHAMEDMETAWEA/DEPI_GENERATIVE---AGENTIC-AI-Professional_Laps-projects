@@ -16,11 +16,11 @@ This track is designed to take a practitioner from the foundations of Machine Le
 | **02 ML Fundamentals** | Regression, Classification, & Evaluation Metrics | ✅ Complete |
 | **03 Deep Learning & Transformers** | CNNs, RNNs, LSTMs, & Transformer Architectures | ✅ Complete |
 | **04 Generative AI Fundamentals** | VAEs, GANs, Diffusion Models, & Fine-tuning (LoRA) | ✅ Complete |
-| **05 Advanced Prompting** | Chain-of-Thought, Reasoning, & Function Calling | 🔄 In Progress |
-| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | ⏳ Upcoming |
+| **05 Advanced Prompting** | Chain-of-Thought, Reasoning, & Function Calling | ✅ Complete |
+| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | ✅ Complete |
 | **07 Multi-Agent Systems** | Communication, Coordination, & Simulation | ⏳ Upcoming |
 | **08 RAG & Memory Systems** | Fusion, Re-ranking, & Memory Augmented Models | ⏳ Upcoming |
-| **09 Deployment & Monitoring** | Scaling, API Integration, & Cost Optimization | ⏳ Upcoming |
+| **09 Deployment & Monitoring** | Scaling, API Integration, & Cost Optimization | 🔄 In Progress |
 | **10 Governance & Capstone** | Industry Trends & Final Project Implementation | ⏳ Upcoming |
 
 ---
@@ -44,8 +44,12 @@ The labs and projects are organized by module following the course progression:
   - **Diffusion Models**: Noise prediction and reverse diffusion processes.
   - **LoRA**: Parameter-efficient fine-tuning for Stable Diffusion.
 - **`M5 Prompt Eng`**:
-  - LLM instruction tuning and Phi-3,5-mini-instruct benchmarks.
-  - Advanced function calling and reasoning-driven prompting.
+  - **Microsoft Phi-3.5**: Benchmarks and instruction tuning.
+  - **Function Calling**: Implementing decision engines for tickets and legal contracts.
+  - **Reasoning Patterns**: Chain-of-Thought and multi-step reasoning.
+- **`M6 Agentic`**:
+  - **Core Agent Patterns**: Planning, tool usage, and autonomy.
+  - **Self-Correction**: Implementing agents that can reflect and fix their own errors.
 
 ### 🌐 Integration & Deployment
 
@@ -55,21 +59,21 @@ The labs and projects are organized by module following the course progression:
 
 ---
 
-## 🛠️ Key Learning Outcomes
+## 🛠️ Key Learning Outcomes & Features
 
-- **Foundational Mastery:** Solid understanding of ML/DL architectures.
-- **Generative Excellence:** Ability to implement, fine-tune, and evaluate generative models (Text & Image).
-- **Reasoning & Prompting:** Developing sophisticated LLM workflows using advanced prompting techniques.
-- **Agentic Autonomy:** Designing and deploying autonomous agents that can use tools and plan.
-- **System Orchestration:** Building multi-agent environments for complex task resolution.
-- **Production Readiness:** Implementing RAG systems and deploying scalable AI solutions.
+- **🧠 Foundational Mastery:** Solid understanding of ML/DL architectures from basic regression to complex Transformers.
+- **🎨 Generative Excellence:** Hands-on experience with VAEs, GANs, and Diffusion models, including LoRA fine-tuning for specialized image generation.
+- **🎯 Advanced Prompting:** Mastering Microsoft Phi-3.5 for reasoning-driven workflows, Chain-of-Thought prompting, and structured function calling.
+- **🤖 Agentic Autonomy:** Designing autonomous agents capable of independent planning, multi-step execution, and complex tool interaction.
+- **🛠️ Self-Correction & Reliability:** Implementing guardrails and reflection loops that allow agents to catch, analyze, and fix their own errors in real-time.
+- **🌐 Production Readiness:** Building scalable APIs with FastAPI and deploying models to local and cloud environments (Docker, Hugging Face).
 
 ---
 
 ## 🧰 Tech Stack
 
 - **Frameworks:** `TensorFlow`, `PyTorch`, `Keras`, `JAX`
-- **Generative AI:** `Hugging Face (Transformers, Diffusers, Accelerate)`, `OpenAI API`
+- **Generative AI:** `Hugging Face (Transformers, Diffusers, Accelerate)`, `OpenAI API`, `Microsoft Phi-3.5`
 - **Deployment:** `FastAPI`, `Gradio`, `Uvicorn`, `Docker`
 - **Data & Reasoning:** `LangChain`, `NumPy`, `Pandas`, `Scikit-learn`, `Matplotlib`
 
