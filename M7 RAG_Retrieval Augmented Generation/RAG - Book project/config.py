@@ -1,0 +1,52 @@
+"""
+config.py
+─────────
+Central configuration for the RAG pipeline.
+
+CHANGES vs. original
+─────────────────────
+① CHUNK_SIZE updated to 220 (was 180/300).
+   all-MiniLM-L6-v2 has a HARD limit of 256 tokens.
+   The task sheet suggests trying 450 — that would silently truncate every
+   chunk during embedding. 220 is the safe practical ceiling with overlap.
+② CHUNK_OVERLAP updated to 40 (was 30/50).
+③ TOP_K_RETRIEVE added (retrieve 20, rerank to TOP_K=5) — enables Task 6.
+④ api_key moved here as the single source of truth.
+   Set your real HuggingFace token here (or via environment variable).
+⑤ DOC_NAME added here so both the notebook and rag_api.py use the same value.
+"""
+
+import os
+
+# ── Embedding model ───────────────────────────────────────────────────────────
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+EMBED_DIM        = 384   # dimension of all-MiniLM-L6-v2
+
+# ── PostgreSQL connection ─────────────────────────────────────────────────────
+PG_CONN_STR = os.getenv(
+    "PG_CONN_STR",
+    "postgresql://postgres:admin@localhost:5432/online_rag_deeplearningbook"
+)
+
+# ── Chunking ──────────────────────────────────────────────────────────────────
+# HARD LIMIT: all-MiniLM-L6-v2 truncates anything > 256 tokens silently.
+# Do NOT set CHUNK_SIZE above 220 for this model.
+CHUNK_SIZE    = 220
+CHUNK_OVERLAP = 40
+
+# ── Retrieval ─────────────────────────────────────────────────────────────────
+TOP_K          = 5    # final chunks sent to LLM
+TOP_K_RETRIEVE = 20   # retrieve this many, then rerank down to TOP_K
+
+# ── Document name ─────────────────────────────────────────────────────────────
+# Must match the doc_name used during ingestion (upsert_chunks call).
+DOC_NAME = "DeepLearning-IanGoodfellow_RAG"
+
+# ── LLM API ───────────────────────────────────────────────────────────────────
+# Set your real HuggingFace token here or as the HF_API_KEY environment var.
+HF_API_KEY   = os.getenv("HF_API_KEY", "your-hf-token-here")
+HF_BASE_URL  = os.getenv("HF_BASE_URL", "https://router.huggingface.co/v1")
+HF_MODEL_NAME = os.getenv("HF_MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
+
+# Legacy alias — some cells use `api_key` directly
+api_key = HF_API_KEY
