@@ -31,9 +31,16 @@ CREATE TABLE IF NOT EXISTS rag_cv_chunks (
     chunk_index INT NOT NULL,
     content     TEXT,
     embedding   VECTOR({dim}),
-    content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED,
     UNIQUE(doc_name, chunk_index)
 );
+"""
+
+
+def get_create_indexes_sql() -> str:
+    """Return index creation SQL — call AFTER all migrations have run."""
+    return """
+CREATE UNIQUE INDEX IF NOT EXISTS rag_cv_chunks_doc_chunk_uidx
+    ON rag_cv_chunks (doc_name, chunk_index);
 
 CREATE INDEX IF NOT EXISTS rag_cv_chunks_doc_idx
     ON rag_cv_chunks (doc_name);

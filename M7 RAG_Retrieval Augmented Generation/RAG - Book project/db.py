@@ -23,6 +23,7 @@ from sql_queries import (
     COUNT_CHUNKS_SQL,
     COUNT_DOC_CHUNKS_SQL,
     get_create_chunks_table_sql,
+    get_create_indexes_sql,
     DELETE_ALL_CHUNKS_SQL,
     DELETE_DOC_CHUNKS_SQL,
 )
@@ -68,15 +69,18 @@ def init_db(conn_str: str, dim: int):
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS section TEXT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS chunk_index INT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS content TEXT;")
-            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS embedding VECTOR({});".format(dim))
+            cur.execute(
+                "ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS"
+                f" embedding VECTOR({dim});"
+            )
+            cur.execute(
+                "ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS"
+                " content_tsv tsvector GENERATED ALWAYS AS"
+                " (to_tsvector('english', coalesce(content, ''))) STORED;"
+            )
 
-            # Set up full-text vector for hybrid search (PostgreSQL 12+)
-            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;")
-
-            # Ensure indexes exist as well
-            cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_doc_idx ON rag_cv_chunks (doc_name);")
-            cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_hnsw_idx ON rag_cv_chunks USING hnsw (embedding vector_cosine_ops);")
-            cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_content_tsv_idx ON rag_cv_chunks USING gin(content_tsv);")
+            # Create indexes AFTER all columns exist
+            cur.execute(get_create_indexes_sql())
 
         conn.commit()
     print(f"✅ DB initialised — embedding dim={dim}, schema version={SCHEMA_VERSION}")
