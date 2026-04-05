@@ -51,22 +51,26 @@ def rerank_results(
 
     Returns
     -------
-    List of 4-tuples: (section, content, cosine_sim, final_score)
+    List of 6-tuples: (chapter, section, chunk_index, content, cosine_sim, final_score)
     Sorted by final_score descending.
     """
     scored = []
     for row in results:
-        # SEARCH_CHUNKS_SQL returns: (chapter, section, chunk_index, content, cosine_sim)
+        # SEARCH_CHUNKS_SQL returns: (chapter, section, chunk_index, content, score)
+        chapter    = row[0] if len(row) > 0 else ""
         section    = row[1] if len(row) > 1 else ""
+        chunk_idx  = row[2] if len(row) > 2 else 0
         content    = row[3] if len(row) > 3 else ""
-        cosine_sim = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
+        # The 5th column from SQL is either cosine_sim (SEARCH_CHUNKS) or hybrid_score (HYBRID)
+        score_val  = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
 
         kw_score   = _keyword_score(question, content)
-        final      = vec_weight * cosine_sim + kw_weight * kw_score
+        # Combine base score (vector/hybrid) with simple keyword overlap
+        final      = vec_weight * score_val + kw_weight * kw_score
 
-        scored.append((section, content, cosine_sim, final))
+        scored.append((chapter, section, chunk_idx, content, score_val, final))
 
-    return sorted(scored, key=lambda x: x[3], reverse=True)
+    return sorted(scored, key=lambda x: x[5], reverse=True)
 
 
 def cross_encoder_rerank(

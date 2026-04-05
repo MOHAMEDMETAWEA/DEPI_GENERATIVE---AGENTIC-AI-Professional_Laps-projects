@@ -176,3 +176,13 @@ def preview_chunks(conn_str: str, limit: int = 5):
         print(f"CHUNK:   {chunk_idx}")
         print((content or "")[:200])
         print("-" * 40)
+
+
+def get_all_chapters(conn_str: str, doc_name: str) -> list:
+    """Return a sorted list of unique chapters for the given document."""
+    from sql_queries import LIST_CHAPTERS_SQL
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+            cur.execute(LIST_CHAPTERS_SQL, (doc_name,))
+            rows = cur.fetchall()
+    return [r[0] for r in rows if r[0]]

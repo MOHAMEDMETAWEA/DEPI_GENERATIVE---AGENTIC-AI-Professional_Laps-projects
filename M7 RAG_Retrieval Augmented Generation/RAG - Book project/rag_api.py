@@ -21,9 +21,9 @@ from typing import Optional
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel, Field
-
 from config import (
     EMBED_MODEL_NAME,
     EMBED_DIM,
@@ -38,11 +38,12 @@ from config import (
     HF_MODEL_NAME,
 )
 from embeddings import load_embedder, embed_chunks
-from retrieval import retrieve_topk
+from retrieval import hybrid_retrieve_topk
 from rerank import rerank_results
 from pdf_loader import read_pdf_text2, read_bdf_text
 from chunking import build_chunks
 from db import init_db, upsert_chunks
+from query_expansion import expand_query
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ from db import init_db, upsert_chunks
 
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question")
+    filter_chapters: Optional[list] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -98,15 +100,19 @@ QUESTION:
 
 
 def _normalize_row(row: tuple) -> dict:
-    """Convert a 4-tuple from rerank_results into a clean dict."""
-    section    = row[0] if len(row) > 0 else ""
-    content    = row[1] if len(row) > 1 else ""
-    cosine_sim = float(row[2]) if len(row) > 2 and row[2] is not None else 0.0
-    final_score = float(row[3]) if len(row) > 3 and row[3] is not None else cosine_sim
+    """Convert a 6-tuple from rerank_results into a clean dict."""
+    chapter    = row[0] if len(row) > 0 else ""
+    section    = row[1] if len(row) > 1 else ""
+    chunk_idx  = row[2] if len(row) > 2 else 0
+    content    = row[3] if len(row) > 3 else ""
+    base_score = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
+    final_score = float(row[5]) if len(row) > 5 and row[5] is not None else base_score
     return {
-        "section":          section or "",
-        "content":          content or "",
-        "vector_similarity": cosine_sim,
+        "chapter":           chapter or "",
+        "section":           section or "",
+        "chunk_index":       chunk_idx,
+        "content":           content or "",
+        "base_similarity":   base_score,
         "final_score":       final_score,
     }
 
@@ -122,13 +128,33 @@ def _build_client() -> Optional[OpenAI]:
 # App
 # ─────────────────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Deep Learning RAG API", version="2.0.0")
+app = FastAPI(title="Deep Learning RAG API", version="2.1.0")
+
+# 1. CORS for Streamlit / Frontend support
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 embedder = load_embedder(EMBED_MODEL_NAME)
 
 
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "doc": DOC_NAME}
+
+
+@app.get("/chapters")
+def get_chapters() -> dict:
+    from db import get_all_chapters
+    try:
+        chapters = get_all_chapters(PG_CONN_STR, DOC_NAME)
+        return {"chapters": chapters}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/ask")
@@ -145,18 +171,25 @@ def ask_question(payload: AskRequest) -> dict:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        # 1. Embed question
+        # 1. Query Expansion (Task 7)
+        expanded = expand_query(question)
+        search_query = expanded["expanded"]  # or rewrite
+
+        # 2. Embed question
         qvec = embedder.encode(
-            [question], normalize_embeddings=True
+            [search_query], normalize_embeddings=True
         )[0].astype(np.float32)
 
-        # 2. Retrieve broader candidate set
-        raw_results = retrieve_topk(PG_CONN_STR, DOC_NAME, qvec, TOP_K_RETRIEVE)
+        # 3. Hybrid Retrieval (Task 5) + Filtering
+        raw_results = hybrid_retrieve_topk(
+            PG_CONN_STR, DOC_NAME, qvec, search_query, TOP_K_RETRIEVE,
+            filter_chapters=payload.filter_chapters
+        )
 
-        # 3. Rerank → now returns 4-tuples (section, content, cosine_sim, final_score)
+        # 4. Rerank (Task 6)
         reranked = rerank_results(question, raw_results)
 
-        # 4. Take top TOP_K for LLM context
+        # 5. Take top TOP_K for LLM context
         top_chunks = [_normalize_row(r) for r in reranked[:TOP_K]]
 
         if top_chunks:
@@ -171,6 +204,7 @@ def ask_question(payload: AskRequest) -> dict:
         return {
             "Generated Answer":       generated_answer,
             "Top Retrieved Chunks":   top_chunks,
+            "Query Expansion":         expanded,
         }
 
     except HTTPException:

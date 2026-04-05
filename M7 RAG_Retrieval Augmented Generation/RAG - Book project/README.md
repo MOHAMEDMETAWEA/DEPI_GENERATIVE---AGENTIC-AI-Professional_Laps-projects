@@ -80,173 +80,77 @@ This project implements a production-ready RAG pipeline that:
 
 ---
 
-## 🚀 Installation
+## 🚀 How to Launch the System
 
-### Step 1: Clone Repository
+Follow these steps to start your optimized RAG system:
 
-```bash
-cd "M7 RAG_Retrieval Augmented Generation/RAG - Book project"
-```
-
-### Step 2: Create Virtual Environment
-
-```bash
-# On Windows
-python -m venv venv
-venv\Scripts\activate
-
-# On macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
+### Step 1: Update Dependencies
+```powershell
 pip install -r requirements.txt
 ```
 
-**Key packages installed:**
-- `fastapi` — REST API framework
-- `uvicorn` — ASGI server for FastAPI
-- `sentence-transformers` — Embedding models
-- `psycopg[binary]` — PostgreSQL client
-- `pgvector` — Vector search support
-- `openai` — OpenAI API client
-- `pymupdf` — PDF text extraction
-- `python-dotenv` — Environment variable loading
+### Step 2: Start the Backend API
+```powershell
+# In one terminal
+python -m uvicorn rag_api:app --reload
+```
 
-### Step 4: Set Up PostgreSQL with pgvector
+### Step 3: Start the Frontend Dashboard
+```powershell
+# In a second terminal
+streamlit run frontend.py
+```
+
+### 🚀 How to Use the New Features
+Once both services are running:
+- **Filter Search:** Use the sidebar multiselect to select specific book chapters. The AI will only look for answers within those sections.
+- **Persistence:** Simply close the browser and come back; your chat history is automatically saved to `chat_history.json` and will be waiting for you.
+- **Clear History:** Use the sidebar button to wipe your local history file for a fresh session.
+
+The system is now significantly more robust, efficient, and user-friendly! 🚀📚
+
+---
+
+## ⚙️ Configuration & Setup
+
+### Step 1: Set Up PostgreSQL with pgvector
 
 #### Option A: Docker (Recommended)
-
 ```bash
-# Pull and run PostgreSQL with pgvector
 docker run --name pgvector-rag \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=admin \
   -e POSTGRES_DB=online_rag_deeplearningbook \
   -p 5432:5432 \
   -d pgvector/pgvector:latest
-
-# Verify connection
-psql -h localhost -U postgres -d online_rag_deeplearningbook
 ```
 
-#### Option B: Local PostgreSQL + pgvector Extension
+#### Option B: Local PostgreSQL
+Ensure you have the `pgvector` extension installed and run `CREATE EXTENSION vector;`.
 
-```sql
--- Connect to PostgreSQL
-psql -U postgres
-
--- Create database
-CREATE DATABASE online_rag_deeplearningbook;
-
--- Connect to the database
-\c online_rag_deeplearningbook
-
--- Create pgvector extension
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Verify
-SELECT * FROM pg_extension WHERE extname = 'vector';
-```
-
----
-
-## ⚙️ Configuration
-
-### Step 1: Create `.env` File
-
-Copy the example and add your credentials:
-
-```bash
-cp .env.example .env
-```
-
-### Step 2: Edit `.env`
-
+### Step 2: Environment Variables (.env)
+Copy `.env.example` to `.env` and add your **HuggingFace API Key**:
 ```env
-# PostgreSQL Connection
 PG_CONN_STR=postgresql://postgres:admin@localhost:5432/online_rag_deeplearningbook
-
-# HuggingFace Configuration
-HF_API_KEY=hf_...your-hf-token...
-HF_BASE_URL=https://router.huggingface.co/v1
-HF_MODEL_NAME=Qwen/Qwen3-Coder-Next:novita
+HF_API_KEY=hf_...your-token...
 ```
-
-### Key Configuration Parameters (`config.py`)
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `EMBED_MODEL_NAME` | `sentence-transformers/all-MiniLM-L6-v2` | Embedding model — 384 dims |
-| `CHUNK_SIZE` | `220` | Max tokens per chunk (256 is hard limit) |
-| `CHUNK_OVERLAP` | `40` | Tokens overlap between chunks |
-| `TOP_K_RETRIEVE` | `20` | Retrieve this many before reranking |
-| `TOP_K` | `5` | Final chunks sent to LLM |
-| `PG_CONN_STR` | `postgresql://...` | PostgreSQL connection string |
-
-⚠️ **Warning:** Do NOT set `CHUNK_SIZE` > 220 for all-MiniLM-L6-v2 — it silently truncates at 256.
 
 ---
 
-## 📖 Usage
+## 📖 Alternative Usage (Notebooks)
 
-### Option 1: Jupyter Notebook (Interactive)
-
+If you prefer to explore the pipeline step-by-step:
 ```bash
 jupyter notebook fullsystem.ipynb
 ```
 
-**Steps in notebook:**
-1. **Load PDF** — Extract text from `Deep+Learning+Ian+Goodfellow.pdf`
-2. **Clean & Chunk** — Intelligent chunking with metadata
-3. **Initialize DB** — Create PostgreSQL table with indexes
-4. **Embed & Ingest** — Store chunks + embeddings in pgvector
-5. **Ask Questions** — Query and get answers with citations
+**Workflow:**
+1. **Load PDF** — Extract text with page tracking.
+2. **Chunking** — Multi-pass regex for chapter detection.
+3. **Ingest** — Embed and store in pgvector.
+4. **Query** — Benchmark results using `evaluate_rag.py`.
 
-**Example cells:**
-```python
-from config import *
-from pdf_loader import read_pdf_text
-from chunking import build_chunks
-from embeddings import load_embedder, embed_chunks
-from db import init_db, upsert_chunks
-
-# 1. Load and chunk
-text = read_pdf_text("Deep+Learning+Ian+Goodfellow.pdf")
-chunks = build_chunks(text, EMBED_MODEL_NAME,
-                      chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
-
-# 2. Initialize database
-init_db(PG_CONN_STR, EMBED_DIM)
-
-# 3. Embed
-embedder = load_embedder(EMBED_MODEL_NAME)
-embeddings = embed_chunks(chunks, embedder)
-
-# 4. Ingest
-upsert_chunks(PG_CONN_STR, DOC_NAME, chunks, embeddings)
-
-# 5. Ask
-question = "What is backpropagation?"
-# ... retrieve, rerank, generate ...
-```
-
-### Option 2: FastAPI Server (Production)
-
-Start the API server:
-
-```bash
-uvicorn rag_api:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Output:**
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     Application startup complete
-```
+---
 
 ### Option 3: Query via cURL/Python
 
@@ -603,12 +507,12 @@ init_db(PG_CONN_STR, EMBED_DIM)
 
 Issues & PRs welcome! Areas for enhancement:
 
-- [ ] Multi-document support (beyond one book)
+- [x] Web UI for chat interface (Streamlit)
+- [x] Persisted conversation history (local JSON storage)
+- [x] Advanced filtering (by chapter)
 - [ ] Semantic caching to reduce LLM calls
 - [ ] Fine-tuned embedding models
-- [ ] Web UI for chat interface
-- [ ] Persisted conversation history
-- [ ] Advanced filtering (by chapter, by year, etc.)
+- [ ] Multi-document support (beyond one book)
 
 ---
 

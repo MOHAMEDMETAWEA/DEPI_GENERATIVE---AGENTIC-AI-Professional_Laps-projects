@@ -104,13 +104,16 @@ SELECT
     content,
     0.7 * (1 - (embedding <=> %s::vector))
     + 0.3 * LEAST(ts_rank(to_tsvector('english', content),
-                           plainto_tsquery('english', %s)), 1)
+                            plainto_tsquery('english', %s)), 1)
     AS hybrid_score
 FROM  rag_cv_chunks
 WHERE doc_name = %s
+  AND (chapter = ANY(%s) OR %s IS NULL)
 ORDER BY hybrid_score DESC
 LIMIT %s
 """
+
+LIST_CHAPTERS_SQL = "SELECT DISTINCT chapter FROM rag_cv_chunks WHERE doc_name = %s ORDER BY chapter;"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
