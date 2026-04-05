@@ -108,7 +108,7 @@ SELECT
     AS hybrid_score
 FROM  rag_cv_chunks
 WHERE doc_name = %s
-  AND (chapter = ANY(%s) OR %s IS NULL)
+  AND (chapter = ANY(%s::TEXT[]) OR %s::TEXT[] IS NULL)
 ORDER BY hybrid_score DESC
 LIMIT %s
 """

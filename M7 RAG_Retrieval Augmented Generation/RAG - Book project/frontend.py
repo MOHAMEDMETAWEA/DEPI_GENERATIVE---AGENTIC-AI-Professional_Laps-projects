@@ -69,20 +69,28 @@ with st.sidebar:
     st.divider()
     st.subheader("🔍 Advanced Filtering")
     
-    # Fetch chapters if not already done
+    # Fetch chapters loader
     if not st.session_state.chapters:
         try:
             r = requests.get(f"{api_base}/chapters", timeout=5)
             if r.status_code == 200:
                 st.session_state.chapters = r.json().get("chapters", [])
-        except Exception:
-            pass
+                if not st.session_state.chapters:
+                    st.warning("⚠️ No chapters found for this document in the database.")
+            else:
+                st.error(f"❌ Failed to load chapters: API returned {r.status_code}")
+        except Exception as e:
+            st.error(f"❌ Could not connect to API for chapters: {e}")
 
     selected_chapters = st.multiselect(
         "Filter by Chapters",
         options=st.session_state.chapters,
         help="Only search within selected chapters. Leave empty for full book search."
     )
+    
+    if st.button("🔄 Refresh Chapters"):
+        st.session_state.chapters = []
+        st.rerun()
 
     st.divider()
     if st.button("🧹 Clear Conversation History"):

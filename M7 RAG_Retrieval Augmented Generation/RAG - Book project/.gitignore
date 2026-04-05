@@ -6,3 +6,5 @@
 *.pdf
 *.doc
 *.docx
+
+chat_history.json
