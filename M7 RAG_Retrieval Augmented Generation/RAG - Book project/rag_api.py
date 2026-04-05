@@ -128,7 +128,7 @@ def _build_client() -> Optional[OpenAI]:
 # App
 # ─────────────────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Deep Learning RAG API", version="2.1.0")
+app = FastAPI(title="Deep Learning RAG API", version="2.2.1-FIXED")
 
 # 1. CORS for Streamlit / Frontend support
 app.add_middleware(
