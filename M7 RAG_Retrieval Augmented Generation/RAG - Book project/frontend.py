@@ -3,8 +3,14 @@ import requests
 import json
 import os
 
+# Bypass system proxies for localhost requests (fixes WinError 10061 in enterprise networks)
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+os.environ["no_proxy"] = "localhost,127.0.0.1"
+
+from config import API_URL
+
 # --- CONFIG ---
-API_URL = "http://127.0.0.1:8000"
+# Default fallback if not set in config; however, config.API_URL should be the primary source.
 HISTORY_FILE = "chat_history.json"
 
 st.set_page_config(
@@ -69,23 +75,41 @@ with st.sidebar:
     st.divider()
     st.subheader("🔍 Advanced Filtering")
     
-    # Fetch chapters loader
+    # Fetch chapters
     if not st.session_state.chapters:
         try:
-            r = requests.get(f"{api_base}/chapters", timeout=5)
+            r = requests.get(f"{api_base}/chapters", timeout=10)
             if r.status_code == 200:
                 st.session_state.chapters = r.json().get("chapters", [])
                 if not st.session_state.chapters:
                     st.warning("⚠️ No chapters found for this document in the database.")
             else:
                 st.error(f"❌ Failed to load chapters: API returned {r.status_code}")
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Could not connect to the Backend API. Please ensure the backend is running (e.g. via run_system.bat) and retry.")
         except Exception as e:
-            st.error(f"❌ Could not connect to API for chapters: {e}")
+            st.error(f"❌ Could not connect to API for chapters. Error details: {e}")
 
     selected_chapters = st.multiselect(
         "Filter by Chapters",
         options=st.session_state.chapters,
         help="Only search within selected chapters. Leave empty for full book search."
+    )
+
+    st.divider()
+    st.caption("📏 Scope by Page Range")
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        min_page = st.number_input("Min Page", value=0, min_value=0, step=1)
+    with col_p2:
+        max_page = st.number_input("Max Page", value=1000, min_value=0, step=1)
+
+    st.divider()
+    st.caption("🏷️ Section/Headline Search")
+    section_filter = st.text_input(
+        "Focus on Section",
+        placeholder="e.g. Backpropagation",
+        help="Search only within sections/headlines matching this keyword."
     )
     
     if st.button("🔄 Refresh Chapters"):
@@ -123,12 +147,13 @@ for message in st.session_state.messages:
         if "chunks" in message and message["role"] == "assistant":
             with st.expander("📚 View Sources & Retrieval Details"):
                 for i, chunk in enumerate(message["chunks"]):
+                    pg = f"Pages: {chunk.get('page_start', '?')}-{chunk.get('page_end', '?')}"
                     st.markdown(f"""
                     <div class="source-box">
                         <strong>Source {i+1}:</strong> {chunk.get('section', 'General')}<br/>
                         <span class="chapter-tag">{chunk.get('chapter', 'Unknown Chapter')}</span> | 
-                        <span class="score-tag">Score: {chunk.get('final_score', 0):.4f}</span> |
-                        <span>Sim: {chunk.get('base_similarity', 0):.4f}</span>
+                        <span>{pg}</span> |
+                        <span class="score-tag">Score: {chunk.get('final_score', 0):.4f}</span>
                         <hr/>
                         {chunk.get('content', '')}
                     </div>
@@ -151,7 +176,10 @@ if prompt := st.chat_input("What is backpropagation?"):
         try:
             payload = {
                 "question": prompt,
-                "filter_chapters": selected_chapters if selected_chapters else None
+                "filter_chapters": selected_chapters if selected_chapters else None,
+                "min_page": int(min_page) if min_page > 0 else None,
+                "max_page": int(max_page) if max_page < 1000 else None,
+                "filter_section": section_filter if section_filter else None
             }
             response = requests.post(
                 f"{api_base}/ask",
@@ -184,12 +212,13 @@ if prompt := st.chat_input("What is backpropagation?"):
                 # Show sources
                 with st.expander("📚 View Sources & Retrieval Details"):
                     for i, chunk in enumerate(chunks):
+                        pg = f"Pages: {chunk.get('page_start', '?')}-{chunk.get('page_end', '?')}"
                         st.markdown(f"""
                         <div class="source-box">
                             <strong>Source {i+1}:</strong> {chunk.get('section', 'General')}<br/>
                             <span class="chapter-tag">{chunk.get('chapter', 'Unknown Chapter')}</span> | 
-                            <span class="score-tag">Score: {chunk.get('final_score', 0):.4f}</span> |
-                            <span>Sim: {chunk.get('base_similarity', 0):.4f}</span>
+                            <span>{pg}</span> |
+                            <span class="score-tag">Score: {chunk.get('final_score', 0):.4f}</span>
                             <hr/>
                             {chunk.get('content', '')}
                         </div>
@@ -198,8 +227,10 @@ if prompt := st.chat_input("What is backpropagation?"):
                 error_msg = f"Error {response.status_code}: {response.text}"
                 message_placeholder.error(error_msg)
 
+        except requests.exceptions.ConnectionError:
+            message_placeholder.error("❌ Failed to connect to the Backend API. Ensure the backend server is running and retry.")
         except Exception as e:
-            message_placeholder.error(f"Failed to connect to API: {e}")
+            message_placeholder.error(f"❌ Failed to connect to API: {e}")
 
 # --- FOOTER ---
 st.divider()
