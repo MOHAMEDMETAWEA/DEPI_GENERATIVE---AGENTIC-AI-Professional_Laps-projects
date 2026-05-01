@@ -103,8 +103,6 @@ The labs and projects are organized by module following the course progression:
     - 📄 `Lab2_Documentation.md` — Detailed technical documentation on pipeline architecture, security rules, and metrics
 
 - **`M7 RAG_Retrieval Augmented Generation`**:
-  - **Context Management & LangChain & API**: LangChain implementation with memory management and conversational systems
-    - `Langchain_Chat with Memory/` — Chat applications with persistent memory
   - **RAG - Book Project**: End-to-end RAG system with PDF processing and semantic search
     - Features: PDF processing, chunking strategies, embeddings, retrieval, reranking
     - **Files**: `demo.ipynb`, `fullsystem.ipynb`, supporting modules (`chunking.py`, `embeddings.py`, `retrieval.py`, `rerank.py`, `rag_api.py`)
@@ -113,6 +111,11 @@ The labs and projects are organized by module following the course progression:
     - Multiple implementation approaches and iterations
   - **RAG PART 2 - RAG Foundation**: Core RAG pipeline implementation
     - `RAG_PART_2_Hybrid_compliance_decision_engine.ipynb` — Compliance-driven RAG engine
+
+- **`M8 LangChain`**:
+  - **Context Management & LangChain & API**: LangChain implementation with memory management and conversational systems
+    - Context management handling and API integration notebooks
+  - **Additional Files**: `contextMang_part2.ipynb`, `test.ipynb`, `test_api/`, and `context_online_G1/`
 
 ### 🌐 Integration & Deployment
 
@@ -224,6 +227,7 @@ As this is a comprehensive learning journey, follow this recommended path:
 | `M5 Prompt Eng` | LLM prompting and function calling | Advanced prompt engineering | Phi-3.5 notebooks, function calling patterns |
 | `M6 Agentic` | Agent design and self-correction | Agent building, production patterns | Lab1 & Lab2 with full documentation |
 | `M7 RAG_Retrieval Augmented Generation` | Knowledge grounding and retrieval | RAG system implementation | End-to-end RAG, policy agents, book project |
+| `M8 LangChain` | LangChain framework and context | Advanced chat & memory systems | Context management, APIs, memory notebooks |
 | `Hugging Face & FastAPI` | Model deployment and APIs | Production deployment | Gradio + FastAPI examples, integration patterns |
 
 ---
@@ -232,7 +236,7 @@ As this is a comprehensive learning journey, follow this recommended path:
 
 | Use Case | Navigate To | Focus On |
 | :--- | :--- | :--- |
-| **Build a chatbot** | `M7/Context Management & Langchain & API` | LangChain chat with memory |
+| **Build a chatbot** | `M8 LangChain/Context Management & Langchain & API` | LangChain chat with memory |
 | **Deploy ML model as API** | `Hugging Face & FastAPI/3) Fast API` | `app.py`, `FastApi_Colab.ipynb` |
 | **Create autonomous agent** | `M6/Agentic/S1,S2_ Core Agent Patterns` | `Lab1_Safe_Sales_Insights_Agent.ipynb` |
 | **Implement self-correcting agent** | `M6/Agentic/S3 Self-Correction` | `Lab2_Policy_Aware_Self_Correcting_Agent.ipynb` |
